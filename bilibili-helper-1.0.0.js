@@ -77,9 +77,18 @@
     target.click();
   }
 
+  function detectIsInputing() {
+    const activeElement = document.activeElement;
+    return activeElement instanceof HTMLInputElement ||
+      activeElement instanceof HTMLTextAreaElement;
+  }
+
   function addHotKeys() {
     document.addEventListener('keypress', async (event) => {
-      console.log(event.key);
+      const isInputing = detectIsInputing();
+      if (isInputing) {
+        return;
+      }
       switch (event.key) {
         // 回车全屏
         case 'Enter':
