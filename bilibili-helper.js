@@ -1,6 +1,6 @@
 "use strict";
 // ==UserScript==
-// @name                bilibili Helper2
+// @name                bilibili Helper
 // @name:zh-CN          bilibili 助手
 // @description         Auto disable bilibili HTML5 player danmaku. Auto widescreen. Add hotkeys（d: toggle danmaku, c: give coins, s: add collections）.
 // @description:zh-CN   自动关闭哔哩哔哩 HTML5 播放器弹幕，自动宽屏，添加快捷键（d:弹幕切换，c：投币，s：收藏）.
@@ -193,6 +193,16 @@ class ConfigPanel extends HTMLElement {
               <option value="default">默认</option>
             </select>
           </div>
+
+          <div>
+          <label for="registerHotKeys"> 启动热键 [d - 切换弹幕] [w - 切换宽屏] </label>
+          <select id="registerHotKeys">
+            <option value="on">启用</option>
+            <option value="off">不启用</option>
+          </select>
+        </div>
+
+          
         </form>
       </div>
     `
@@ -276,6 +286,7 @@ class ConfigPanel extends HTMLElement {
     defaultDanmakuStatus: 'off', // on,off,default
     defaultScreenStatus: 'widescreen', // widescreen,fullscreen,default
     showEpisodesWhenWidescreen: 'on', // on - off
+    registerHotKeys: 'on', // on - off
     fixAutoJumpPv: 'on', // on - off
     // type: 'toggleDanmaku' | 'toggleWidescreen' | 'toggleFullscreen' | 'next' | 'prev' | 'toggleSubtitle'
     hotKeys: [{
@@ -346,6 +357,10 @@ class ConfigPanel extends HTMLElement {
 
   /** register hotkeys */
   function registerHotKeys() {
+    if (config.registerHotKeys === 'off') {
+      return;
+    }
+
     document.addEventListener('keypress', async (event) => {
       const isInputing = detectIsInputing();
       if (isInputing) {
