@@ -2,10 +2,10 @@
 // ==UserScript==
 // @name                bilibili Helper
 // @name:zh-CN          bilibili 助手
-// @description         Auto disable bilibili HTML5 player danmaku. Auto widescreen. Add hotkeys（d: toggle danmaku, enter: toggle fullscreen, c: give coins, s: add collections）.
-// @description:zh-CN   自动关闭哔哩哔哩 HTML5 播放器弹幕，自动宽屏，添加快捷键（d:弹幕切换，enter：全屏，c：投币，s：收藏）.
+// @description         Auto disable bilibili HTML5 player danmaku. Auto widescreen. Add hotkeys（d: toggle danmaku, c: give coins, s: add collections）.
+// @description:zh-CN   自动关闭哔哩哔哩 HTML5 播放器弹幕，自动宽屏，添加快捷键（d:弹幕切换，c：投币，s：收藏）.
 // @namespace           bilibili-helper
-// @version             2020.04.19
+// @version             2021.07.22
 // @author              everbrez
 // @license             MIT License
 // @match               *://www.bilibili.com/video/*
@@ -90,13 +90,10 @@
         return;
       }
       switch (event.key) {
-        // 回车全屏
-        case 'Enter':
-          return autoClickElement('.bilibili-player-video-btn-fullscreen button[data-text*="全屏"]');
-          // d 切换弹幕开关
+        // d 切换弹幕开关
         case 'd':
         case 'D':
-          return autoClickElement('input.bui-checkbox');
+          return autoClickElement('input.bui-switch-input');
           // s 收藏
         case 's':
         case 'S':
@@ -120,7 +117,7 @@
   }
 
   function main() {
-    const selectorList = ['input.bui-checkbox:checked', 'button[data-text="宽屏模式"]'];
+    const selectorList = ['input.bui-switch-input:checked', 'button[data-text="宽屏模式"]', '.squirtle-video-widescreen:not(.active)'];
     selectorList.forEach(selector => autoClickElement(selector));
     addHotKeys();
   }
