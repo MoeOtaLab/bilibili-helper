@@ -148,6 +148,7 @@ class ConfigPanel extends HTMLElement {
         overflow: hidden;
 
         font-size: 14px;
+        box-shadow: 0 0 8px #e5e9ef;
       }
 
       .dialog:not(.show) {
