@@ -5,7 +5,7 @@
 // @description         Auto disable bilibili HTML5 player danmaku. Auto widescreen. Add hotkeys（d: toggle danmaku, c: give coins, s: add collections）.
 // @description:zh-CN   自动关闭哔哩哔哩 HTML5 播放器弹幕，自动宽屏，添加快捷键（d:弹幕切换，c：投币，s：收藏）.
 // @namespace           bilibili-helper
-// @version             2021.07.22
+// @version             2021.08.29
 // @author              everbrez
 // @license             MIT License
 // @match               *://www.bilibili.com/video/*
@@ -64,6 +64,7 @@ function waitForElement(targetSelector, rootSelector = 'body', wait) {
 }
 
 async function autoClickElement(targetSelector, rootSelector, now = false) {
+  console.log('set==> ', targetSelector)
   if (now) {
     const parent = rootSelector ? document.querySelector(rootSelector) : document;
     if (parent) {
@@ -76,7 +77,12 @@ async function autoClickElement(targetSelector, rootSelector, now = false) {
     return false;
   }
   const target = await waitForElement(targetSelector, rootSelector);
+  console.log('auto click:', target)
   target.click();
+}
+
+function autoClickElements(selectorList) {
+  return Promise.race(selectorList.map(selector => autoClickElement(selector)))
 }
 
 function detectIsInputing() {
@@ -84,45 +90,123 @@ function detectIsInputing() {
   return activeElement instanceof HTMLInputElement ||
     activeElement instanceof HTMLTextAreaElement;
 }
+
+function getStorageConfig(key) {
+  try {
+    const data = JSON.parse(key)
+    if (data instanceof Object) {
+      return data
+    }
+  } catch (error) {
+    // ignore..
+  } finally {
+    return null
+  }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 /** END: utils */
 (function () {
-  function addHotKeys() {
+  /** global config */
+  const DEFAULT_CONFIG_KEY = 'BILIBILI_HELPER_CONFIG'
+  const defaultConfig = {
+    defaultDanmakuStatus: 'off', // on,off,default
+    defaultScreenStatus: 'widescreen', // widescreen,fullscreen,default
+    showEpisodesWhenWidescreen: 'on', // on - off
+    fixAutoJumpPv: 'on', // on - off
+    // type: 'toggleDanmaku' | 'toggleWidescreen' | 'toggleFullscreen' | 'next' | 'prev' | 'toggleSubtitle'
+    hotKeys: [{
+      type: 'toggleDanmaku',
+      keys: ['d']
+    }, {
+      type: 'toggleWidescreen',
+      keys: ['w']
+    }, {
+      type: 'toggleFullscreen',
+      keys: [], // use default 'f' provided by bilibili official
+    }, {
+      type: 'next',
+      keys: [],
+    }, {
+      type: 'prev',
+      keys: [],
+    }, {
+      type: 'toggleSubtitle',
+      keys: [],
+    }],
+  }
+
+  const _config = getStorageConfig(DEFAULT_CONFIG_KEY) || defaultConfig;
+
+  const config = new Proxy(_config, {
+    set(target, prop, value, receiver) {
+      localStorage.setItem(DEFAULT_CONFIG_KEY, _config)
+      return Reflect.set(target, prop, value, receiver)
+    }
+  })
+
+  async function autoClickElementAfterFound(targetSelector, foundSelector) {
+    await waitForElement(foundSelector)
+    // await for bilibili initial process
+    await sleep(1000)
+    autoClickElement(targetSelector)
+  }
+
+  /** set danmaku status */
+  function setDefaultDanmakuStatus() {
+    switch (config.defaultDanmakuStatus) {
+      case 'on':
+        console.log('===on===')
+        return autoClickElementAfterFound('input.bui-switch-input:not(:checked)', 'input.bui-switch-input')
+      case 'default':
+        return;
+      case 'off':
+      default:
+        console.log('===off===', document.querySelector('input.bui-switch-input:checked'))
+        return autoClickElementAfterFound('input.bui-switch-input:checked', 'input.bui-switch-input')
+    }
+  }
+
+  /** set screen status */
+  function setScreenStatus() {
+    switch (config.defaultScreenStatus) {
+      case 'widescreen':
+        return autoClickElements(['button[data-text="宽屏模式"]', '.squirtle-video-widescreen:not(.active)'])
+        // case 'fullscreen':
+        //   return ['button[data-text="进入全屏"]', '.squirtle-video-fullscreen:not(.active)'].forEach(selector => autoClickElement(selector))
+      case 'default':
+      default:
+        return;
+    }
+  }
+
+  /** register hotkeys */
+  function registerHotKeys() {
     document.addEventListener('keypress', async (event) => {
       const isInputing = detectIsInputing();
       if (isInputing) {
         return;
       }
-      switch (event.key) {
-        // d 切换弹幕开关
-        case 'd':
-        case 'D':
+
+      const targetHotKeys = config.hotKeys.find(item => item.keys.includes(event.key))
+
+      switch (targetHotKeys.type) {
+        case 'toggleDanmaku':
           return autoClickElement('input.bui-switch-input');
-          // s 收藏
-        case 's':
-        case 'S':
-          // 如果已经打开了收藏，则关闭
-          const hasOpenedCollect = await autoClickElement('[class*="bili-dialog"] .close', undefined, true);
-          if (hasOpenedCollect) {
-            return;
-          }
-          return autoClickElement('.collect[title*="收藏"]');
-          // c 投币
-        case 'c':
-        case 'C':
-          // 如果已经打开了硬币，则关闭
-          const hasOpenedCoin = await autoClickElement('[class*="bili-dialog"] .close', undefined, true);
-          if (hasOpenedCoin) {
-            return;
-          }
-          return autoClickElement('.coin[title*="硬币"]');
+        case 'toggleWidescreen':
+          return autoClickElements(['button[data-text="宽屏模式"]', '.squirtle-video-fullscreen:not(.active)'])
+        case 'toggleFullscreen':
+          return autoClickElements(['button[data-text="宽屏模式"]', '.squirtle-video-fullscreen:not(.active)'])
       }
     });
   }
 
   function main() {
-    const selectorList = ['input.bui-switch-input:checked', 'button[data-text="宽屏模式"]', '.squirtle-video-widescreen:not(.active)'];
-    selectorList.forEach(selector => autoClickElement(selector));
-    addHotKeys();
+    setDefaultDanmakuStatus();
+    setScreenStatus();
+    registerHotKeys();
   }
 
   main();
