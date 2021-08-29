@@ -14,75 +14,78 @@
 // @match               *://www.bilibili.com/watchlater/*
 // @match               *://player.bilibili.com/*
 // ==/UserScript==
-(function () {
-  /**
-   * wait for an element to render
-   * @usage
-   * const targetElement = await waitForElement('.target')
-   * // then do something
-   * if the rootElement is not exist, waitForElement will throw an error
-   *
-   * @param {string} targetSelector the target element query selector
-   * @param {string} [rootSelector='body'] default search root element: body
-   * @param {number} [wait] how long to cancal watch this element to render, default: wait forever
-   * @returns {Promise<Element>} return the target element dom object
-   */
-  function waitForElement(targetSelector, rootSelector = 'body', wait) {
-    const rootElement = document.querySelector(rootSelector);
-    if (!rootElement) {
-      console.log('root element is not exist');
-      return Promise.reject('root element is not exist');
-    }
-    // check if the element is already rendered
-    const targetElement = rootElement.querySelector(targetSelector);
-    if (targetElement) {
-      return Promise.resolve(targetElement);
-    }
-    return new Promise((resolve, reject) => {
-      const callback = function (matationList, observer) {
-        const targetElement = rootElement.querySelector(targetSelector);
-        if (targetElement) {
-          // found
-          resolve(targetElement);
-          // then cancel to watch the element
-          observer.disconnect();
-        }
-      };
-      const observer = new MutationObserver(callback);
-      observer.observe(rootElement, {
-        subtree: true,
-        childList: true
-      });
-      if (wait !== undefined) {
-        // if wait is set, then cancel to watch the element to render after wait times
-        setTimeout(() => {
-          observer.disconnect();
-        }, wait);
+
+/** START: utils */
+/**
+ * wait for an element to render
+ * @usage
+ * const targetElement = await waitForElement('.target')
+ * // then do something
+ * if the rootElement is not exist, waitForElement will throw an error
+ *
+ * @param {string} targetSelector the target element query selector
+ * @param {string} [rootSelector='body'] default search root element: body
+ * @param {number} [wait] how long to cancal watch this element to render, default: wait forever
+ * @returns {Promise<Element>} return the target element dom object
+ */
+function waitForElement(targetSelector, rootSelector = 'body', wait) {
+  const rootElement = document.querySelector(rootSelector);
+  if (!rootElement) {
+    console.log('root element is not exist');
+    return Promise.reject('root element is not exist');
+  }
+  // check if the element is already rendered
+  const targetElement = rootElement.querySelector(targetSelector);
+  if (targetElement) {
+    return Promise.resolve(targetElement);
+  }
+  return new Promise((resolve, reject) => {
+    const callback = function (matationList, observer) {
+      const targetElement = rootElement.querySelector(targetSelector);
+      if (targetElement) {
+        // found
+        resolve(targetElement);
+        // then cancel to watch the element
+        observer.disconnect();
       }
+    };
+    const observer = new MutationObserver(callback);
+    observer.observe(rootElement, {
+      subtree: true,
+      childList: true
     });
-  }
-  async function autoClickElement(targetSelector, rootSelector, now = false) {
-    if (now) {
-      const parent = rootSelector ? document.querySelector(rootSelector) : document;
-      if (parent) {
-        const target = parent.querySelector(targetSelector);
-        if (target) {
-          target.click();
-          return true;
-        }
-      }
-      return false;
+    if (wait !== undefined) {
+      // if wait is set, then cancel to watch the element to render after wait times
+      setTimeout(() => {
+        observer.disconnect();
+      }, wait);
     }
-    const target = await waitForElement(targetSelector, rootSelector);
-    target.click();
-  }
+  });
+}
 
-  function detectIsInputing() {
-    const activeElement = document.activeElement;
-    return activeElement instanceof HTMLInputElement ||
-      activeElement instanceof HTMLTextAreaElement;
+async function autoClickElement(targetSelector, rootSelector, now = false) {
+  if (now) {
+    const parent = rootSelector ? document.querySelector(rootSelector) : document;
+    if (parent) {
+      const target = parent.querySelector(targetSelector);
+      if (target) {
+        target.click();
+        return true;
+      }
+    }
+    return false;
   }
+  const target = await waitForElement(targetSelector, rootSelector);
+  target.click();
+}
 
+function detectIsInputing() {
+  const activeElement = document.activeElement;
+  return activeElement instanceof HTMLInputElement ||
+    activeElement instanceof HTMLTextAreaElement;
+}
+/** END: utils */
+(function () {
   function addHotKeys() {
     document.addEventListener('keypress', async (event) => {
       const isInputing = detectIsInputing();
@@ -121,5 +124,6 @@
     selectorList.forEach(selector => autoClickElement(selector));
     addHotKeys();
   }
+
   main();
 })();
