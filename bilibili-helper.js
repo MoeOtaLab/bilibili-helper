@@ -132,7 +132,7 @@ class ConfigPanel extends HTMLElement {
     style.innerHTML = `
       .dialog {
         position: fixed;
-        right: 50%;
+        left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
         z-index: 9999;
@@ -149,6 +149,13 @@ class ConfigPanel extends HTMLElement {
 
         font-size: 14px;
         box-shadow: 0 0 8px #e5e9ef;
+        color: #212121;
+      }
+
+      .title {
+        margin-bottom: 16px;
+        text-align: center;
+        line-height: 22px;
       }
 
       .dialog:not(.show) {
@@ -172,11 +179,38 @@ class ConfigPanel extends HTMLElement {
         border: none;
         cursor: pointer;
       }
+
+      .footer {
+        margin-block-start: 16px;
+        text-align: center;
+      }
+
+      .footer button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        min-width: 100px;
+        background: #f4f4f4;
+        line-height: 22px;
+        border-radius: 2px;
+
+        transition: color cubic-bezier(0.215, 0.610, 0.355, 1) .25s,
+          background-color cubic-bezier(0.215, 0.610, 0.355, 1) .25s;
+      }
+
+      .footer button:hover {
+        color: #00a1d6;
+      }
+
+      .footer button:active {
+        background-color: #e7e7e7;
+      }
     `
 
     const div = document.createElement('div')
     div.innerHTML = `
       <div class="dialog">
+        <div class="title">Bilibili Helper Configuration</div>
         <form class="panel">
           <div>
             <label for="defaultDanmakuStatus"> 默认弹幕状态 </label>
@@ -196,15 +230,14 @@ class ConfigPanel extends HTMLElement {
           </div>
 
           <div>
-          <label for="registerHotKeys"> 启动热键 [d - 切换弹幕] [w - 切换宽屏] </label>
-          <select id="registerHotKeys">
-            <option value="on">启用</option>
-            <option value="off">不启用</option>
-          </select>
-        </div>
-
-          
+            <label for="registerHotKeys"> 启动热键 [d - 切换弹幕] [w - 切换宽屏] </label>
+            <select id="registerHotKeys">
+              <option value="on">启用</option>
+              <option value="off">不启用</option>
+            </select>
+          </div>
         </form>
+        <div class="footer"><button id="confirm">确定</button></div>
       </div>
     `
 
@@ -212,6 +245,20 @@ class ConfigPanel extends HTMLElement {
     this.handleClickOutside = this.handleClickOutside.bind(this)
     this.closeDialog = this.closeDialog.bind(this)
     this.openDialog = this.openDialog.bind(this)
+
+    const confirmButton = div.querySelector('#confirm')
+    confirmButton.addEventListener('click', () => {
+      this.close()
+    })
+  }
+
+  get data() {
+    return this._value
+  }
+
+  set data(value) {
+    this._value = value
+    this.resetFormValues();
   }
 
   connectedCallback() {
@@ -224,12 +271,16 @@ class ConfigPanel extends HTMLElement {
 
   handleClickOutside(event) {
     if (event.target !== this) {
-      this.closeDialog();
+      this.close();
     }
   }
 
   get form() {
     return this.shadowRoot.querySelector('form')
+  }
+
+  close = () => {
+    this.setAttribute('open', '')
   }
 
 
@@ -238,7 +289,7 @@ class ConfigPanel extends HTMLElement {
     dialog && dialog.classList.remove('show');
     if (this.ready) {
       const value = Object.fromEntries([...this.form.elements].map(el => [el.id, el.value]))
-      this.value = JSON.stringify(value)
+      this.data = value
       this.dispatchEvent(new Event('change'))
     }
   }
@@ -249,13 +300,13 @@ class ConfigPanel extends HTMLElement {
   }
 
   resetFormValues() {
+    const data = this.data;
     [...this.form.elements].forEach((el) => {
-      el.value = this._value[el.id];
+      el.value = data[el.id];
     })
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    this.ready = true;
     if (name === 'open') {
       if (newValue) {
         this.openDialog();
@@ -263,19 +314,7 @@ class ConfigPanel extends HTMLElement {
         this.closeDialog();
       }
     }
-
-    if (name === 'value') {
-      try {
-        const currentValue = JSON.parse(newValue);
-        // this. = currentValue;
-        if (currentValue instanceof Object) {
-          this._value = currentValue
-          this.resetFormValues();
-        }
-      } catch (error) {
-        // ignore
-      }
-    }
+    this.ready = true;
   }
 }
 
@@ -344,12 +383,12 @@ class ConfigPanel extends HTMLElement {
   }
 
   /** set screen status */
-  function setScreenStatus() {
-    switch (config.defaultScreenStatus) {
+  function setScreenStatus(defaultScreenStatus = config.defaultScreenStatus) {
+    switch (defaultScreenStatus) {
       case 'widescreen':
         return autoClickElements(['button[data-text="宽屏模式"]', '.squirtle-video-widescreen:not(.active)'])
-        // case 'fullscreen':
-        //   return ['button[data-text="进入全屏"]', '.squirtle-video-fullscreen:not(.active)'].forEach(selector => autoClickElement(selector))
+      case 'fullscreen':
+        return autoClickElements(['button[data-text="进入全屏"]', '.squirtle-video-fullscreen:not(.active)'])
       case 'default':
       default:
         return;
@@ -374,9 +413,9 @@ class ConfigPanel extends HTMLElement {
         case 'toggleDanmaku':
           return autoClickElement('input.bui-switch-input');
         case 'toggleWidescreen':
-          return autoClickElements(['button[data-text="宽屏模式"]', '.squirtle-video-fullscreen:not(.active)'])
+          return autoClickElements(['button[data-text="宽屏模式"]', '.squirtle-video-widescreen'])
         case 'toggleFullscreen':
-          return autoClickElements(['button[data-text="宽屏模式"]', '.squirtle-video-fullscreen:not(.active)'])
+          return autoClickElements(['button[data-text="进入全屏"]', '.squirtle-video-fullscreen'])
       }
     });
   }
@@ -390,14 +429,16 @@ class ConfigPanel extends HTMLElement {
       if (currentStatus) {
         panel.setAttribute('open', '');
       } else {
+        panel.data = {
+          ...config
+        }
         panel.setAttribute('open', 'true');
-        panel.setAttribute('value', JSON.stringify(config));
       }
     }, 'openConfig')
 
     panel.addEventListener('change', (event) => {
       try {
-        const value = JSON.parse(event.target.value);
+        const value = event.target.data
         Object.assign(config, value);
       } catch (error) {
         // ignore
