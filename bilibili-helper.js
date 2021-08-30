@@ -448,11 +448,21 @@ class ConfigPanel extends HTMLElement {
     document.body.append(panel);
   }
 
+  async function showPlayList() {
+    const style = document.createElement('style')
+    document.body.append(style)
+    if (style.sheet) {
+      style.sheet.addRule('.squirtle-pagelist-wrap', 'display: flex !important; align-items: center;')
+      style.sheet.addRule('.squirtle-wide-screen .squirtle-pagelist-wrap', 'display: block !important;')
+    }
+  }
+
   function main() {
     setDefaultDanmakuStatus();
     setScreenStatus();
     registerHotKeys();
     createPanel();
+    showPlayList();
   }
 
   main();
