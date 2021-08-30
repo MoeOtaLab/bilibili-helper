@@ -2,8 +2,8 @@
 // ==UserScript==
 // @name                bilibili Helper
 // @name:zh-CN          bilibili 助手
-// @description         Auto disable bilibili HTML5 player danmaku. Auto widescreen. Add hotkeys（d: toggle danmaku, c: give coins, s: add collections）.
-// @description:zh-CN   自动关闭哔哩哔哩 HTML5 播放器弹幕，自动宽屏，添加快捷键（d:弹幕切换，c：投币，s：收藏）.
+// @description         Auto disable bilibili HTML5 player danmaku. Auto widescreen. Add hotkeys（d: toggle danmaku）. Can override by configuration.
+// @description:zh-CN   自动关闭哔哩哔哩 HTML5 播放器弹幕，自动宽屏，添加快捷键（d:弹幕切换）.可通过配置修改默认行为
 // @namespace           bilibili-helper
 // @version             2021.08.29
 // @author              everbrez
