@@ -114,7 +114,7 @@ function sleep(ms) {
 }
 /** END: utils */
 
-/** panel element */
+/** START: panel element */
 class ConfigPanel extends HTMLElement {
   static get observedAttributes() {
     return ['open', 'value'];
@@ -317,6 +317,7 @@ class ConfigPanel extends HTMLElement {
     this.ready = true;
   }
 }
+/** END: panel element */
 
 /** end panel element */
 (function () {
@@ -411,6 +412,10 @@ class ConfigPanel extends HTMLElement {
 
       switch (targetHotKeys.type) {
         case 'toggleDanmaku':
+          if (document.querySelector('.bilibili-player-area')) {
+            // use default.
+            return;
+          }
           return autoClickElement('input.bui-switch-input');
         case 'toggleWidescreen':
           return autoClickElements(['button[data-text="宽屏模式"]', '.squirtle-video-widescreen'])
